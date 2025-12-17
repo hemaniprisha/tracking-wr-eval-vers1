@@ -150,11 +150,6 @@ def main():
         # Uncertainty quantification  
         pipeline.quantify_uncertainty(X, y, n_iterations=50)
 
-
-    # --------------------------------------------------------------------------
-    # Train / Test predictions (REQUIRED by visuals)
-    # --------------------------------------------------------------------------
-
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import (
         r2_score,
@@ -168,10 +163,6 @@ def main():
 
     y_pred_train = best_model.predict(X_train)
     y_pred_test = best_model.predict(X_test)
-
-    # --------------------------------------------------------------------------
-    # Results object (EXACT schema expected by tracking_visuals.py)
-    # --------------------------------------------------------------------------
 
     target_col = 'targets_per_game'  # Default
     if hasattr(y, 'name') and y.name:
@@ -205,15 +196,10 @@ def main():
 
     analyzer.models = pipeline.models
 
-    # --------------------------------------------------------------------------
     # Visualizations
-    # --------------------------------------------------------------------------
-
     create_all_visuals(analyzer, output_dir=dirs["visualizations"])
 
-    # --------------------------------------------------------------------------
     # Exports
-    # --------------------------------------------------------------------------
 
     analyzer.df.to_csv(
         os.path.join(dirs["data"], "processed_data_with_features.csv"),
@@ -224,10 +210,6 @@ def main():
         os.path.join(dirs["reports"], "model_comparison.csv"),
         index=False,
     )
-
-    # --------------------------------------------------------------------------
-    # Done
-    # --------------------------------------------------------------------------
 
     best = pipeline.results["model_comparison"].iloc[0]
     # Export for Streamlit Dashboard
