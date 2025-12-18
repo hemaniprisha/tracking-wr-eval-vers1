@@ -1,314 +1,154 @@
-# WR Tracking Data Analysis: From Static to Dynamic Evaluation
+# 🎯 Tracking Prophet
 
-## Project Overview
+**Predicting NFL Wide Receiver Success with In-Game Tracking Data**
 
-This project demonstrates **why tracking-derived metrics outperform traditional combine testing** in predicting wide receiver success. Through comprehensive analysis of college football tracking data, we prove that **in-game performance data** captures the skills that actually translate to professional football.
-
-### The Story in Three Acts
-
-**Act 1: The Problem** ((https://github.com/hemaniprisha/CombineProphetAnalytics))
-
-- Combine metrics (40-time, vertical, etc.) have R² = **-0.155**
-- Mean error of **14.5 yards/game** (51% of average production)
-- Conclusion: Static testing **fails to predict** WR performance
-
-**Act 2: The Solution** (This Project)
-
-- Tracking metrics achieve R² = **0.30+** (195% improvement)
-- Captures **actual football skills**: separation, route running, playmaking
-- Provides **actionable insights** for drafting and player profiling
-
-**Act 3: The Impact**
-
-- **Financial**: Reduce $8M+ bust risk per high draft pick
-- **Competitive**: Build superior WR evaluation framework
-- **Strategic**: Match players to scheme needs with archetype profiling
+*Because 40-times don't tell the whole story.*
 
 ---
 
-## Football Context & Strategy Knowledge
+## The Problem
 
-### What Combine Testing Misses
+NFL teams spend **$8M+** on rookie WR contracts with a **40-50% bust rate**. The NFL Combine has been the evaluation standard for decades, but combine metrics (40-yard dash, vertical jump, 3-cone drill) achieve an **R² of -0.155** when predicting NFL performance—worse than random guessing.
 
-Traditional scouting focuses on:
+**Why?** Static tests in shorts and a t-shirt don't capture real football skills: route precision, separation against live defenders, or cutting ability in game situations.
 
-- **40-yard dash** → Straight-line speed in shorts
-- **Vertical jump** → Explosive power without context
-- **3-cone/shuttle** → Agility in isolation
+---
 
-**The Problem**: These tests don't involve:
+## The Solution
 
-- Live defenders
-- Route decisions
-- Ball tracking
-- Fatigue effects
-- Coverage recognition
-- Competitive situations
+This project uses **college in-game tracking data** to predict:
+1. **Draft Position** — What do scouts actually value?
+2. **NFL Rookie Performance** — What actually predicts success?
 
-### What Tracking Data Captures
+### Results
 
-In-game tracking measures **functional football skills**:
+| Analysis | R² Score | Improvement vs Combine |
+|----------|----------|------------------------|
+| Draft Prediction | **0.689** | 544% better |
+| NFL Rookie Performance | **0.120** | 177% better |
 
-1. **Separation Ability** (The #1 Predictor)
-
-   - Can they get open consistently?
-   - Not just fast, but _fast where it matters_
-   - Measured vs actual NFL-caliber defenders
-
-2. **Route Running Intelligence**
-
-   - **Route diversity**: Can they run the full tree?
-   - **Stem discipline**: Do they sell routes the same way?
-   - **Break point timing**: When do they make cuts?
-   - **vs Man coverage**: Ultimate test of technique
-
-3. **Playmaking Ability**
-
-   - **YAC Over Expected**: Do they create after the catch?
-   - **CPOE**: Does QB trust them (high completion %)?
-   - **Contested catches**: Can they win in traffic?
-
-4. **Change of Direction**
-
-   - **Entry speed**: How fast into the cut?
-   - **Exit speed**: How much speed maintained?
-   - **Separation created**: Does the break gain yards?
-
-5. **Durability Indicators**
-   - **High-volume performance**: 150+ play thresholds
-   - **Late-game efficiency**: Fatigue resistance
-   - **Explosive event frequency**: Burst sustainability
+**Key Finding:** Scouts overweight raw speed, but **cutting ability** (speed through route breaks) is the strongest predictor of NFL success.
 
 ---
 
 ## Project Structure
 
 ```
-tracking-wr-analysis/
-├── README.md                           # This file
-├── requirements.txt                    # Python dependencies
-├── run_complete_analysis.py            # Main runner script
-├── tracking_analysis.py                # Core analysis pipeline
-├── tracking_visuals.py                 # Visualization suite
-├── streamlit_app.py                    # Interactive dashboard
+tracking-prophet/
 ├── data/
-│   └── your_tracking_data.csv         # Input data
-└── results/                            # Generated outputs
-    ├── 1_model_comparison.png          # Tracking vs Combine
-    ├── 2_feature_importance.png        # What predicts success
-    ├── 3_actual_vs_predicted.png       # Model accuracy
-    ├── 4_player_archetypes.png         # 5 distinct types
-    ├── 5_context_matters.png           # Situational analysis
-    ├── executive_summary.txt           # 1-page overview
-    ├── technical_report.txt            # Full methodology
-    └── processed_data_with_features.csv
+│   └── tracking_with_outcomes.csv    # Raw tracking data
+├── src/
+│   ├── tracking_analysis_draft.py    # Draft prediction pipeline
+│   ├── tracking_analysis_nfl.py      # NFL performance pipeline
+│   ├── advanced_modeling.py          # ML model comparison & tuning
+│   └── tracking_visuals.py           # Visualization generation
+├── results/
+│   ├── visualizations/               # Generated charts
+│   ├── reports/                      # Executive summary, model comparison
+│   └── data/                         # Processed data exports
+├── run_analysis_draft.py             # Main runner for draft analysis
+├── run_analysis_nfl.py               # Main runner for NFL analysis
+├── streamlit_app.py                  # Interactive dashboard
+└── requirements.txt
 ```
 
 ---
 
 ## Quick Start
 
-### Installation
+### 1. Install Dependencies
 
 ```bash
-# Clone repository
-git clone git@github.com:hemaniprisha/tracking-wr-evaluation.git
-cd tracking-wr-analysis
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Run Complete Analysis
+### 2. Run Analysis
 
+**Draft Prediction:**
 ```bash
-# Run full pipeline (analysis + visualizations + reports)
-python run_complete_analysis.py --data data/your_data.csv --output results/
-
-# Options:
-#   --data PATH         Input CSV file (required)
-#   --output DIR        Output directory (default: results/)
-#   --min-plays N       Minimum plays threshold (default: 50)
+python run_analysis_draft.py --data data/tracking_with_outcomes.csv --output results/
 ```
 
-### Launch Interactive Dashboard
+**NFL Rookie Performance:**
+```bash
+python run_analysis_nfl.py --data data/tracking_with_outcomes.csv --output results/
+```
+
+### 3. Launch Dashboard
 
 ```bash
 streamlit run streamlit_app.py
-
-# Then upload your CSV in the sidebar
-# Navigate through 5 tabs:
-#   1. The Story - Visual narrative
-#   2. Model Performance - Predictive analysis
-#   3. Player Archetypes - 5 distinct types
-#   4. Player Deep Dive - Individual profiles
-#   5. Methodology - Technical details
 ```
 
 ---
 
-## Key Features
+## Features Engineered
 
-### 1. **Football-First Feature Engineering**
+15 football-meaningful features derived from raw tracking data:
 
-Every engineered feature maps to a **football concept**:
-
-- **Speed Score** → Deep threat ability
-- **Separation Consistency** → Can they get open?
-- **Route Diversity** → Scheme versatility
-- **YAC Ability** → Playmaking beyond situation
-- **Man Coverage Win Rate** → Toughest test
-
-### 2. **Player Archetypes**
-
-Different **player archetypes**:
-
-1. Deep Threat Burners (Tyreek Hill)
-2. Route Technicians (Davante Adams)
-3. YAC Monsters (Deebo Samuel)
-4. Complete Receivers (Justin Jefferson)
-5. Possession Specialists (Hunter Renfrow)
-
-### 3. **Context-Aware Analysis**
-
-- **Volume effects**: Does high usage hurt performance?
-- **Coverage splits**: Man vs Zone performance
-- **Route depth**: Does speed = separation at every level?
-- **Sample size**: Reliability indicators built-in
-
-### 4. **ROI Quantification**
-
-We can translate R² improvements to **dollar impact**:
-
-- Cost per bust: $8M+ over rookie contract
-- Draft success improvement: 10+ percentage points
-- 5-year savings estimate: $12M+ conservatively
-- Competitive advantage: measurable
+| Category | Features |
+|----------|----------|
+| **Athleticism** | Speed Score, Burst Rate, First Step Quickness, Brake Rate |
+| **Route Running** | Route Diversity, Separation Consistency, Sharp Cut Ability, Route Bend Ability |
+| **Change of Direction** | Cut Separation, COD Separation Generated |
+| **Workload** | Distance per Play, Explosive Rate, Total Plays |
+| **Raw Metrics** | Max Speed 99, Change Direction Route Mean |
 
 ---
 
-## Football Strategy Insights
+## Models Compared
 
-### Draft Philosophy Shifts
+| Model | Draft R² | NFL R² | Notes |
+|-------|----------|--------|-------|
+| XGBoost (Tuned) | **0.689** | -0.178 | Best for large samples |
+| Random Forest | 0.677 | 0.084 | Solid baseline |
+| Gradient Boosting | 0.663 | 0.025 | High overfit risk |
+| LightGBM | 0.677 | -0.190 | Fast but overfit |
+| ElasticNet | 0.366 | **0.120** | Best for small samples |
+| Ridge | 0.375 | 0.101 | Simple baseline |
 
-**OLD THINKING** (Combine-Era):
-
-- "He ran a 4.3 forty → must be good"
-- "Great vertical → red zone threat"
-- "Elite athleticism → will develop"
-
-**NEW THINKING** (Tracking-Era):
-
-- "Does he create separation consistently?"
-- "Can he run the full route tree?"
-- "Does he produce vs man coverage?"
-- "Is he a playmaker after the catch?"
-
-### Position-Specific Applications
-
-**Slot vs Outside WR:**
-
-- **Slot needs**: Quick cuts (90° COD), contested catches, YAC
-- **Outside needs**: Speed, deep separation, route diversity
-
-**Scheme Fit:**
-
-- **West Coast**: Route technicians (high CPOE, diverse routes)
-- **Vertical**: Deep threats (speed score, separation at depth)
-- **Modern/RPO**: YAC monsters (after-catch explosiveness)
-
-**Complementary Pieces:**
-
-- Don't draft same archetype repeatedly
-- Build archetype diversity in WR room
-- Match to QB strengths (arm talent vs accuracy)
+**Lesson:** Match model complexity to sample size. Tree models overfit with only 55 NFL samples.
 
 ---
 
-## Metrics Glossary (Football Translation)
+## Key Insights
 
-### Speed & Athleticism
+### What Scouts Value (Draft Model)
+1. Speed Score (0.20)
+2. Max Speed (0.12)
+3. Separation Consistency (0.12)
 
-- **max_speed_99**: Consistent top speed (not one lucky play)
-- **flying_10/20**: Acceleration once already at speed
-- **burst_rate**: Explosive events per play (route explosion)
+### What Predicts NFL Success
+1. **Sharp Cut Ability (0.51)** ← Dominates
+2. Max Speed (0.39)
+3. Route Bending (0.34)
 
-### Separation & Coverage
-
-- **average_separation_99**: How open they get (99th percentile)
-- **separation_at_throw_VMAN**: vs Man coverage (toughest test)
-- **separation_change_postthrow**: Ball tracking ability
-
-### Route Running
-
-- **route_diversity**: Versatility across route tree
-- **changedir*route*%**: Hard cut frequency (technical complexity)
-- **10yd+/20yd+ route\_%**: Depth profile (deep vs short game)
-
-### Playmaking
-
-- **YACOE**: Yards After Catch Over Expected (pure playmaking)
-- **CPOE**: Completion % Over Expected (QB-friendly)
-- **contested_catch_rate**: Success in tight windows (<2 yards)
-
-### Change of Direction
-
-- **cod_entry/exit_speed_90**: Through 90° cuts (slants, outs)
-- **cod_entry/exit_speed_180**: Through 180° cuts (comebacks)
-- **cod_sep_generated**: Separation created from cuts
-
---
-
-## Comparison to The Combine Project
-
-| Aspect             | Combine Project             | Tracking Project          |
-| ------------------ | --------------------------- | ------------------------- |
-| **Data Type**      | Static athletic tests       | In-game tracking          |
-| **R² Score**       | -0.155 (fails)              | 0.30+ (succeeds)          |
-| **Error Rate**     | 51% of avg production       | <30% of avg production    |
-| **Sample Size**    | 1-2 attempts per test       | 50-300 plays per player   |
-| **Context**        | No defenders                | Live game situations      |
-| **Predictors**     | 40-time, vertical, etc.     | Separation, routes, YAC   |
-| **Outcome**        | Proves combine doesn't work | Proves tracking does work |
-| **Business Value** | Identifies the problem      | Provides the solution     |
-| **Story Arc**      | Act 1 (Problem)             | Act 2 (Solution)          |
-
-**Together, they tell a complete story**:
-Combine metrics are not enough. Tracking is needed.
-
-## Requirements
-
-```txt
-pandas>=1.5.0
-numpy>=1.21.0
-matplotlib>=3.5.0
-seaborn>=0.12.0
-scikit-learn>=1.0.0
-streamlit>=1.20.0
-plotly>=5.10.0
-```
+**The Gap = Opportunity:** Players with elite cutting but average 40-times may be undervalued in the draft.
 
 ---
 
-## Next Steps After Analysis
+## Limitations
 
-### Immediate Actions:
+- **Small NFL sample** (55 players) limits confidence
+- **Can't capture intangibles** (leadership, work ethic, football IQ)
+- **NFL success factors unmeasured:** opportunity, QB quality, scheme fit, injuries
+- **Single college season** (2022) → NFL rookies (2023-24)
 
-1. **Review visualizations** for presentation
-2. **Read executive summary** for key talking points
-3. **Explore Streamlit app** for interactive demo
-4. **Generate player reports** for specific prospects
+---
 
-### Integration into Scouting:
+## Tech Stack
 
-1. **Minimum thresholds**: Set tracking benchmarks for draft consideration
-2. **Archetype mapping**: Classify current prospects by type
-3. **Scheme fit**: Match archetypes to offensive system
-4. **Board building**: Re-rank draft board with tracking data
+- **Data Processing:** Pandas, NumPy
+- **ML Models:** Scikit-learn, XGBoost, LightGBM
+- **Interpretability:** SHAP
+- **Visualization:** Matplotlib, Seaborn, Plotly
+- **Dashboard:** Streamlit
+- **NFL Data:** nfl_data_py, rapidfuzz (name matching)
 
-### Long-Term Development:
+---
 
-1. **Multi-year tracking**: Build historical database
-2. **Pro comparisons**: Map college archetypes to NFL success
-3. **Injury risk**: Integrate workload and style indicators
-4. **Real-time scouting**: Live game tracking integration
+## Author
+
+**Prisha Hemani**  
+[GitHub](https://github.com/hemaniprisha) • [LinkedIn](https://www.linkedin.com/in/prisha-hemani-4194a8257/) • hemaniprisha1@gmail.com
+
