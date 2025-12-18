@@ -1,59 +1,49 @@
 
-╔══════════════════════════════════════════════════════════════════════════╗
-║                                                                          ║
-║                        EXECUTIVE SUMMARY                                 ║
-║                   WR Evaluation with Tracking Data                       ║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝
+                            Summary:                                 
+                   WR Evaluation with Tracking Data                       
 
-Date: December 16, 2025
+Date: December 17, 2025
 Analyst: Prisha Hemani
 
-================================================================================
-1. THE PROBLEM: COMBINE TESTING FAILS
-================================================================================
+1. The Problem: Using Only Combine Testing Fails
 
 Traditional NFL scouting relies heavily on combine metrics:
 • 40-yard dash, vertical jump, broad jump, 3-cone drill, shuttle
 
-PREVIOUS ANALYSIS RESULTS (Combine Prophet Analytics):
+Previous Analysis Results (Combine Prophet Analytics):
 • Predictive Power (R²): -0.155 (worse than guessing)
 • Mean Absolute Error: 14.5 yards per game (51% of average production)
 • Conclusion: Static testing CANNOT predict WR performance
 
-WHAT COMBINE MISSES:
-✗ Route discipline and precision
-✗ Separation ability vs live defenders
-✗ Ball tracking and adjustments
-✗ Yards after catch creation
-✗ Performance under fatigue
-✗ Coverage recognition
-✗ Functional athleticism in game situations
+What Combine Misses: 
+• Route discipline and precision
+• Separation ability vs live defenders
+• Ball tracking and adjustments
+• Yards after catch creation
+• Performance under fatigue
+• Coverage recognition
+• Functional athleticism in game situations
 
-================================================================================
-2. THE SOLUTION: TRACKING-DERIVED METRICS
-================================================================================
+2. The Solution: Using Tracking-Derived Metrics
 
-CURRENT ANALYSIS RESULTS (Tracking Data):
+Current Analysis Results (Tracking Data):
 • Dataset Size: 6,237 players
 • Tracking Metrics: 77 features
 • Sample Period: College football season(s)
 
-BEST MODEL: XGBOOST_TUNED
+Best Model: XGBOOST_TUNED
 • Test R²: 0.689
 • Test MAE: 4.070
 • Cross-Validation R²: 0.674 ± 0.058
 
-IMPROVEMENT OVER COMBINE:
+Improvement over Combine:
 • R² Improvement: 544%
 • Prediction Quality: Excellent
 • Overfitting Check: ✓ Good
 
-================================================================================
-3. KEY FINDINGS
-================================================================================
+3. Key Findings
 
-TOP 10 PREDICTIVE FEATURES:
+Top 10 Predictive Features:
 
                Model  CV R² Mean  CV R² Std  Train R²   Test R²  Test MAE  Test RMSE  Overfit Gap
 6      xgboost_tuned    0.674298   0.058477  0.830249  0.688635  4.069918   8.976108     0.141614
@@ -64,12 +54,12 @@ TOP 10 PREDICTIVE FEATURES:
 0              ridge    0.350490   0.081936  0.375636  0.374561  9.689781  12.721722     0.001075
 5        elastic_net    0.344807   0.076133  0.367945  0.365831  9.857632  12.810201     0.002114
 
-FOOTBALL TRANSLATION:
-✓ Separation consistency > raw speed
-✓ Route diversity indicates NFL versatility
-✓ YAC ability identifies playmakers
-✓ Performance vs man coverage = ultimate test
-✓ Volume sustainability shows durability
+Football Translation:
+• Separation consistency > raw speed
+• Route diversity indicates NFL versatility
+• YAC ability identifies playmakers
+• Performance vs man coverage = ultimate test
+• Volume sustainability shows durability
 
 PLAYER ARCHETYPES IDENTIFIED:
 1. Deep Threat Burners: Elite speed, vertical stretching
@@ -78,9 +68,9 @@ PLAYER ARCHETYPES IDENTIFIED:
 4. Complete Receivers: Above-average across all dimensions
 5. Possession Specialists: Reliable hands, chain-moving
 
-================================================================================
-4. BUSINESS IMPACT & ROI
-================================================================================
+
+4. Business Impact
+
 
 FINANCIAL CONTEXT:
 • Average rookie WR contract (Rds 1-3): $2M-$8M per year
@@ -91,47 +81,26 @@ ROI OF TRACKING-BASED EVALUATION:
 
 Conservative Estimate (10% bust rate reduction):
 • 40% bust rate → 30% bust rate
-• 5 draft classes × 3 WRs per class = 15 picks
-• 1.5 fewer busts × $8M = $12M saved
+• 5 draft classes x 3 WRs per class = 15 picks
+• 1.5 fewer busts x $8M = $12M saved
 
 Moderate Estimate (15% bust rate reduction):
 • 40% bust rate → 25% bust rate
 • Same 15 picks scenario
-• 2.25 fewer busts × $8M = $18M saved
+• 2.25 fewer busts x $8M = $18M saved
 
 Additional Benefits:
-✓ Identify undervalued prospects (high tracking, low combine)
-✓ Build scheme-specific player profiles
-✓ Optimize draft capital allocation
-✓ Competitive advantage in evaluation
+• Identify undervalued prospects (high tracking, low combine)
+• Build scheme-specific player profiles
+• Optimize draft capital allocation
+• Competitive advantage in evaluation
 
-================================================================================
-5. RECOMMENDATIONS
-================================================================================
 
-IMMEDIATE ACTIONS (Next 30 Days):
-1. Integrate tracking metrics into 2025 draft scouting reports
-2. Re-evaluate current WR room using tracking profiles
-3. Identify "buy-low" trade/FA opportunities
-4. Present findings to scouting and coaching staff
 
-SHORT TERM (3-6 Months):
-1. Build multi-year tracking database (2020-2024)
-2. Create position-specific models (slot vs outside WR)
-3. Establish minimum tracking thresholds for draft consideration
-4. Train scouts on new metrics and interpretation
+6. Mechanics
 
-LONG TERM (6-12 Months):
-1. Extend methodology to all skill positions (RB, TE)
-2. Integrate with injury risk and durability metrics
-3. Develop proprietary tracking analytics platform
-4. Build NFL success prediction model (college → pro)
 
-================================================================================
-6. TECHNICAL SOPHISTICATION
-================================================================================
-
-MODELING APPROACH:
+Modeling Approach
 • Compared 6 algorithms (Ridge, RF, GB, XGBoost, LightGBM, ElasticNet)
 • Rigorous cross-validation (5-fold)
 • Hyperparameter optimization
@@ -140,18 +109,11 @@ MODELING APPROACH:
 • SHAP interpretability (modern ML explainability)
 • Uncertainty quantification (bootstrap confidence intervals)
 
-This is NOT a basic analysis. This demonstrates:
-✓ Understanding of multiple ML algorithms
-✓ Proper validation methodology
-✓ Advanced interpretability techniques
-✓ Statistical rigor
-✓ Business translation
 
-================================================================================
-7. CONCLUSION
-================================================================================
+7. Conclusion
 
-The evidence is overwhelming:
+
+The evidence is clear:
 
 TRACKING DATA WORKS. COMBINE TESTING DOESN'T.
 
@@ -163,16 +125,10 @@ tracking metrics provide actionable insights for:
 • Scheme fit assessment
 • Player development
 
-Teams that embrace tracking-based evaluation gain a measurable, sustainable
+Teams that embrace tracking-based evaluation gain a 
 competitive advantage in talent acquisition.
 
-The question is no longer "Should we use tracking data?"
-The question is "Can we afford NOT to?"
+For reports, see: results/reports/ folder
+For visualizations, see: results/visualizations/ folder
+For interactive Streamlit app, run: streamlit run streamlit_app_draft.py
 
-================================================================================
-
-For detailed methodology, see: technical_report.txt
-For visualizations, see: visualizations/ folder
-For interactive exploration, run: streamlit run streamlit_app.py
-
-Questions? Contact: prisha.hemani@email.com

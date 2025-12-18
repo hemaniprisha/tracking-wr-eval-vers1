@@ -1,18 +1,13 @@
 """
-Advanced Multi-Model Analysis Pipeline
-======================================
+Multi-model ML pipeline with ensemble methods, interaction analysis, and uncertainty estimates.
 
-Key Features:
-- Multiple model comparison
-- Ensemble methods
-- Feature interaction analysis
-- Uncertainty quantification
-- SHAP values
+Supports common tree/boosting algorithms, hyperparameter search, SHAP interpretation,
+and bootstrap-based confidence intervals.
 """
 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import cross_val_score, GridSearchCV, KFold
+from sklearn.model_selection import cross_val_score, GridSearchCV, KFold, train_test_split
 from sklearn.ensemble import (
     GradientBoostingRegressor,
     RandomForestRegressor,
@@ -26,10 +21,8 @@ import xgboost as xgb
 import lightgbm as lgb
 import warnings
 
-# Suppress warnings from model libraries to keep output readable
 warnings.filterwarnings('ignore')
 
-# Optional dependency for model interpretability
 try:
     import shap
     SHAP_AVAILABLE = True
@@ -39,251 +32,152 @@ except ImportError:
 
 
 class AdvancedModelingPipeline:
-    # Container for model construction, evaluation, and analysis
+    """Manages model training, evaluation, ensembling, and interpretation."""
     
     def __init__(self):
-        # Stores initialized models by name
         self.models = {}
-        # Stores intermediate and final results
         self.results = {}
-        # Tracks the best-performing model after comparison
         self.best_model = None
-        # Stores weights used for ensemble prediction
         self.ensemble_weights = {}
         
     def build_model_suite(self):
-        """
-        Initialize the suite of candidate models used for comparison.
-
-        Populates self.models with baseline linear, tree-based, and
-        gradient-boosted regressors using fixed default configurations.
-
-        Returns: self
-        """
+        """Initialize baseline and advanced models for comparison."""
         print("Building models... ")
         
-        # Dictionary defining models and their configuration metadata
-        models = {
-            # Linear baseline for reference
-            'ridge': {
-                'model': Ridge(alpha=1.0),
-                'rationale': 'Baseline linear model - interpretable coefficients',
-                'strength': 'Clear feature relationships',
-                'weakness': 'Assumes linearity'
-            },
-            
-            # Bagged decision trees for non-linear structure
-            'random_forest': {
-                'model': RandomForestRegressor(
-                    n_estimators=200,
-                    max_depth=8,
-                    min_samples_split=10,
-                    min_samples_leaf=4,
-                    random_state=42,
-                    n_jobs=-1
-                ),
-                'rationale': 'Handles non-linearity, robust to outliers',
-                'strength': 'Feature interactions, overfitting resistant',
-                'weakness': 'Can miss subtle patterns'
-            },
-            
-            # Sequential boosting with shallow trees
-            'gradient_boosting': {
-                'model': GradientBoostingRegressor(
-                    n_estimators=150,
-                    learning_rate=0.05,
-                    max_depth=5,
-                    min_samples_split=10,
-                    min_samples_leaf=4,
-                    subsample=0.8,
-                    random_state=42
-                ),
-                'rationale': 'Sequential error correction, strong performance',
-                'strength': 'Captures complex patterns iteratively',
-                'weakness': 'Slower training than RF'
-            },
-            
-            # Regularized gradient boosting using XGBoost
-            'xgboost': {
-                'model': xgb.XGBRegressor(
-                    n_estimators=150,
-                    learning_rate=0.05,
-                    max_depth=5,
-                    min_child_weight=3,
-                    subsample=0.8,
-                    colsample_bytree=0.8,
-                    reg_alpha=0.1,
-                    reg_lambda=1.0,
-                    random_state=42,
-                    n_jobs=-1
-                ),
-                'rationale': 'Regularized boosting, prevents overfitting',
-                'strength': 'Built-in regularization, faster than sklearn GB',
-                'weakness': 'More hyperparameters to tune'
-            },
-            
-            # Histogram-based gradient boosting using LightGBM
-            'lightgbm': {
-                'model': lgb.LGBMRegressor(
-                    n_estimators=150,
-                    learning_rate=0.05,
-                    max_depth=5,
-                    num_leaves=31,
-                    min_child_samples=10,
-                    subsample=0.8,
-                    colsample_bytree=0.8,
-                    reg_alpha=0.1,
-                    reg_lambda=1.0,
-                    random_state=42,
-                    n_jobs=-1,
-                    verbose=-1
-                ),
-                'rationale': 'Fast histogram-based boosting, handles large data',
-                'strength': 'Extremely fast, memory efficient',
-                'weakness': 'Less interpretable than simpler models'
-            },
-            
-            # Linear model with combined L1 and L2 regularization
-            'elastic_net': {
-                'model': ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42),
-                'rationale': 'Feature selection via L1, stability via L2',
-                'strength': 'Automatic feature selection',
-                'weakness': 'Linear assumptions'
-            }
-        }
+        # Ridge: fast baseline, good for linear relationships
+        self.models['ridge'] = Ridge(alpha=1.0)
         
-        # Print summary of model choices
-        print("\nModel Information:\n")
-        for name, info in models.items():
-            print(f"{name.upper()}")
-            print(f"  Rationale: {info['rationale']}")
-            print(f"  - Strength: {info['strength']}")
-            print(f"  - Weakness: {info['weakness']}\n")
+        # RF: handles nonlinearity well, less prone to overfitting
+        self.models['random_forest'] = RandomForestRegressor(
+            n_estimators=200,
+            max_depth=8,
+            min_samples_split=10,
+            min_samples_leaf=4,
+            random_state=42,
+            n_jobs=-1
+        )
         
-        # Store only the model objects for downstream use
-        self.models = {name: info['model'] for name, info in models.items()}
+        # GBM: sequential boosting, strong but slower to train
+        self.models['gradient_boosting'] = GradientBoostingRegressor(
+            n_estimators=150,
+            learning_rate=0.05,
+            max_depth=5,
+            min_samples_split=10,
+            min_samples_leaf=4,
+            subsample=0.8,
+            random_state=42
+        )
+        
+        # XGBoost: regularized boosting with built-in overfitting protection
+        self.models['xgboost'] = xgb.XGBRegressor(
+            n_estimators=150,
+            learning_rate=0.05,
+            max_depth=5,
+            min_child_weight=3,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            random_state=42,
+            n_jobs=-1
+        )
+        
+        # LightGBM: histogram-based, very fast on large datasets
+        self.models['lightgbm'] = lgb.LGBMRegressor(
+            n_estimators=150,
+            learning_rate=0.05,
+            max_depth=5,
+            num_leaves=31,
+            min_child_samples=10,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            random_state=42,
+            n_jobs=-1,
+            verbose=-1
+        )
+        
+        # ElasticNet: L1+L2 regularization, good for feature selection
+        self.models['elastic_net'] = ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42)
+        
         return self
     
-    def compare_models(self, X, y, cv_folds=5):
-        """
-        Train and evaluate all configured models using cross-validation
-        and a held-out test set.
-
-        Stores per-model performance metrics including R², MAE, RMSE,
-        and overfitting diagnostics in self.results['model_comparison'].
-
-        Params:
-        X : pandas.DataFrame
-        Feature matrix.
-        y : pandas.Series or numpy.ndarray
-        Target variable.
+    def compare_models(self, X, y, cv=5):
+        """Train all models and compare performance using CV + holdout test set."""
+        print(f"\n\nComparing Models ({cv}-fold CV)")
+        print(f"Training samples: {len(X):,}, Features: {X.shape[1]}\n")
         
-        Returns: self
-        """
-        print("\n\nComparing the Models")
-        print(f"\nValidation Strategy: {cv_folds}-Fold Cross-Validation")
-        print(f"Training Samples: {len(X):,}")
-        print(f"Features: {X.shape[1]}\n")
-        
-        from sklearn.model_selection import train_test_split
-        
-        # Create a fixed train-test split for fair comparison
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.25, random_state=42
-        )
+        # Fixed split for fair comparison across models
+        X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)
         
         results = []
         
-        for name, model in self.models.items():
+        for name, mdl in self.models.items():
             print(f"\nTraining {name.upper()}...")
             
-            # Cross-validation performed only on training data
-            cv_scores = cross_val_score(
-                model, X_train, y_train,
-                cv=cv_folds,
-                scoring='r2',
-                n_jobs=-1
-            )
+            # CV scores on training data only
+            cv_scores = cross_val_score(mdl, X_tr, y_tr, cv=cv, scoring='r2', n_jobs=-1)
             
-            # Fit model on full training set
-            model.fit(X_train, y_train)
+            mdl.fit(X_tr, y_tr)
             
-            # Generate predictions for diagnostics
-            y_pred_train = model.predict(X_train)
-            y_pred_test = model.predict(X_test)
+            y_pred_tr = mdl.predict(X_tr)
+            y_pred_te = mdl.predict(X_te)
             
-            # Compute evaluation metrics
-            train_r2 = r2_score(y_train, y_pred_train)
-            test_r2 = r2_score(y_test, y_pred_test)
-            test_mae = mean_absolute_error(y_test, y_pred_test)
-            test_rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
+            r2_tr = r2_score(y_tr, y_pred_tr)
+            r2_te = r2_score(y_te, y_pred_te)
+            mae_te = mean_absolute_error(y_te, y_pred_te)
+            rmse_te = np.sqrt(mean_squared_error(y_te, y_pred_te))
             
-            # Difference between train and test performance
-            overfit_gap = train_r2 - test_r2
+            gap = r2_tr - r2_te  # overfitting indicator
             
             results.append({
                 'Model': name,
                 'CV R² Mean': cv_scores.mean(),
                 'CV R² Std': cv_scores.std(),
-                'Train R²': train_r2,
-                'Test R²': test_r2,
-                'Test MAE': test_mae,
-                'Test RMSE': test_rmse,
-                'Overfit Gap': overfit_gap
+                'Train R²': r2_tr,
+                'Test R²': r2_te,
+                'Test MAE': mae_te,
+                'Test RMSE': rmse_te,
+                'Overfit Gap': gap
             })
             
             print(f"  CV R²: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
-            print(f"  Test R²: {test_r2:.3f} | MAE: {test_mae:.3f}")
-            print(f"  Overfit Gap: {overfit_gap:.3f}",
-                  "High" if overfit_gap > 0.15 else "Good")
+            print(f"  Test R²: {r2_te:.3f} | MAE: {mae_te:.3f}")
+            if gap > 0.15:
+                print(f"  Overfit Gap: {gap:.3f} (HIGH - watch out)")
+            else:
+                print(f"  Overfit Gap: {gap:.3f} (looks good)")
         
-        # Aggregate results into a table sorted by test performance
-        results_df = pd.DataFrame(results).sort_values('Test R²', ascending=False)
+        df = pd.DataFrame(results).sort_values('Test R²', ascending=False)
         
-        print("\n\nModel Comparison")
-        print(results_df.to_string(index=False))
+        print("\n\nModel Comparison Summary")
+        print(df.to_string(index=False))
         
-        # Select the best-performing model on the test set
-        best_idx = results_df['Test R²'].idxmax()
-        best_model_name = results_df.loc[best_idx, 'Model']
-        self.best_model = self.models[best_model_name]
+        # Pick winner based on test R²
+        winner_idx = df['Test R²'].idxmax()
+        winner_name = df.loc[winner_idx, 'Model']
+        self.best_model = self.models[winner_name]
         
-        print(f"\n Best Model: {best_model_name.upper()}")
-        print(f"   Test R²: {results_df.loc[best_idx, 'Test R²']:.3f}")
-        print(f"   Test MAE: {results_df.loc[best_idx, 'Test MAE']:.3f}")
+        print(f"\nBest Model: {winner_name.upper()}")
+        print(f"  Test R²: {df.loc[winner_idx, 'Test R²']:.3f}")
+        print(f"  Test MAE: {df.loc[winner_idx, 'Test MAE']:.3f}")
         
-        # Persist data splits and comparison results
-        self.results['model_comparison'] = results_df
-        self.results['X_train'] = X_train
-        self.results['X_test'] = X_test
-        self.results['y_train'] = y_train
-        self.results['y_test'] = y_test
+        # Store everything for later use
+        self.results['model_comparison'] = df
+        self.results['X_train'] = X_tr
+        self.results['X_test'] = X_te
+        self.results['y_train'] = y_tr
+        self.results['y_test'] = y_te
         
         return self
+    
     def hyperparameter_tuning(self, X, y, model_name='xgboost'):
-        """
-        Perform cross-validated hyperparameter tuning for a supported model.
-        Uses randomized search to efficiently explore the parameter space
-        and identify a high-performing configuration. The best estimator
-        and tuning metadata are stored for downstream evaluation.
-        Adds a tuned model to self.models and stores tuning results in self.results
-
-
-        Params:
-        X : pandas.DataFrame
-        Feature matrix.
-        y : pandas.Series or numpy.ndarray
-        Target values.
-        model_name : str, default='xgboost'
-        Model to tune. Supported options: 'xgboost', 'lightgbm'.
-
-        Returns: self
-        """
-        print(f"Hyperparameter tuning: {model_name.upper()}")
+        """Run randomized hyperparameter search for XGBoost or LightGBM."""
+        print(f"\nHyperparameter tuning: {model_name.upper()}")
         
-        # Define search spaces tailored to each boosting framework
         if model_name == 'xgboost':
-            param_grid = {
+            params = {
                 'n_estimators': [100, 150, 200],
                 'learning_rate': [0.01, 0.05, 0.1],
                 'max_depth': [3, 5, 7],
@@ -291,57 +185,40 @@ class AdvancedModelingPipeline:
                 'subsample': [0.7, 0.8, 0.9],
                 'colsample_bytree': [0.7, 0.8, 0.9]
             }
-            # Start from an untuned baseline model
-            base_model = xgb.XGBRegressor(random_state=42, n_jobs=-1)
+            base = xgb.XGBRegressor(random_state=42, n_jobs=-1)
             
         elif model_name == 'lightgbm':
-            param_grid = {
+            params = {
                 'n_estimators': [100, 150, 200],
                 'learning_rate': [0.01, 0.05, 0.1],
                 'max_depth': [3, 5, 7],
                 'num_leaves': [15, 31, 63],
                 'min_child_samples': [5, 10, 20]
             }
-            base_model = lgb.LGBMRegressor(
-                random_state=42, n_jobs=-1, verbose=-1
-            )
-        
-        # Exit early if tuning is not defined for the selected model
+            base = lgb.LGBMRegressor(random_state=42, n_jobs=-1, verbose=-1)
         else:
-            print(f"Tuning not implemented for {model_name}")
+            print(f"Tuning not supported for {model_name}")
             return self
         
-        # Log size of the hyperparameter search space
-        print(f"\nSearching {len(param_grid)} hyperparameters...")
-        print(
-            f"   Search space: ~"
-            f"{np.prod([len(v) for v in param_grid.values()]):,} combinations"
-        )
+        # Estimate search space size for user's benefit
+        n_combos = np.prod([len(v) for v in params.values()])
+        print(f"Searching {len(params)} hyperparameters (~{n_combos:,} total combinations)")
         
-        # Randomized search used instead of full grid for computational efficiency
         from sklearn.model_selection import RandomizedSearchCV
         
         search = RandomizedSearchCV(
-            base_model,
-            param_distributions=param_grid,
-            n_iter=50,               # Samples a representative subset
-            scoring='r2',
-            cv=5,                    # Nested cross-validation for robustness
-            random_state=42,
-            n_jobs=-1,
-            verbose=0
+            base, param_distributions=params, n_iter=50,
+            scoring='r2', cv=5, random_state=42, n_jobs=-1, verbose=0
         )
         
-        # Fit search over the full dataset
         search.fit(X, y)
         
-        # Report best-performing configuration
-        print(f"   Best CV R²: {search.best_score_:.3f}")
-        print(f"   Best Parameters:")
-        for param, value in search.best_params_.items():
-            print(f"      {param}: {value}")
+        print(f"Best CV R²: {search.best_score_:.3f}")
+        print("Best Parameters:")
+        for p, v in search.best_params_.items():
+            print(f"  {p}: {v}")
         
-        # Store tuned model alongside original versions
+        # Add tuned version to model collection
         self.models[f'{model_name}_tuned'] = search.best_estimator_
         self.results[f'{model_name}_tuning'] = {
             'best_score': search.best_score_,
@@ -350,378 +227,265 @@ class AdvancedModelingPipeline:
         
         return self
     
-    def build_ensemble(self, X, y, top_n=3):
-        """
-        Construct a weighted ensemble from the top-performing models.
-
-        Ensemble weights are derived from inverse test-set MAE, and
-        predictions are combined via weighted averaging.
-
-        Stores ensemble weights and predictions in self.results
-
-        Params: 
-        X : pandas.DataFrame
-        Feature matrix.
-        y : pandas.Series or numpy.ndarray
-        Target values.
-        top_n : int, default=3
-        Number of top models to include in the ensemble.
-
-        Return: self
-        """
-
-        print("Building Models")
+    def build_ensemble(self, X, y, n=3):
+        """Create weighted ensemble from top N models based on inverse MAE."""
+        print(f"\nBuilding Ensemble (top {n} models)")
         
-        # Ensure base model comparison has already been run
         if 'model_comparison' not in self.results:
-            print("Run compare_models() first!")
+            print("ERROR: Run compare_models() first")
             return self
         
-        # Select top-N models by test R²
-        top_models = self.results['model_comparison'].head(top_n)
+        top = self.results['model_comparison'].head(n)
         
-        print(f"\nEnsemble Components (Top {top_n} by Test R²):\n")
-        print(top_models[['Model', 'Test R²', 'Test MAE']].to_string(index=False))
+        print("\nEnsemble Members:")
+        print(top[['Model', 'Test R²', 'Test MAE']].to_string(index=False))
         
-        # Retrieve held-out test data
-        X_test = self.results['X_test']
-        y_test = self.results['y_test']
+        X_te = self.results['X_test']
+        y_te = self.results['y_test']
         
-        # Generate predictions from each ensemble member
-        predictions = {}
-        for _, row in top_models.iterrows():
-            model_name = row['Model']
-            model = self.models[model_name]
-            predictions[model_name] = model.predict(X_test)
+        # Get predictions from each model
+        preds = {}
+        for _, row in top.iterrows():
+            nm = row['Model']
+            preds[nm] = self.models[nm].predict(X_te)
         
-        # Weight models by inverse MAE to favor lower-error predictors
-        weights = {}
-        total_inv_mae = 0
-        for _, row in top_models.iterrows():
-            inv_mae = 1 / row['Test MAE']
-            weights[row['Model']] = inv_mae
-            total_inv_mae += inv_mae
+        # Weight by inverse MAE (lower error = higher weight)
+        wts = {}
+        total_inv = 0
+        for _, row in top.iterrows():
+            inv = 1.0 / row['Test MAE']
+            wts[row['Model']] = inv
+            total_inv += inv
         
-        # Normalize weights so they sum to one
-        for model_name in weights:
-            weights[model_name] /= total_inv_mae
+        # Normalize weights to sum to 1
+        for nm in wts:
+            wts[nm] /= total_inv
         
-        print("\nEnsemble Weights:")
-        for model_name, weight in weights.items():
-            print(f"   {model_name:20s}: {weight:.3f}")
+        print("\nWeights:")
+        for nm, w in wts.items():
+            print(f"  {nm:20s}: {w:.3f}")
         
-        # Compute weighted average prediction
-        ensemble_pred = np.zeros(len(y_test))
-        for model_name, pred in predictions.items():
-            ensemble_pred += pred * weights[model_name]
+        # Weighted average prediction
+        ens_pred = np.zeros(len(y_te))
+        for nm, pr in preds.items():
+            ens_pred += pr * wts[nm]
         
-        # Evaluate ensemble performance
-        ensemble_r2 = r2_score(y_test, ensemble_pred)
-        ensemble_mae = mean_absolute_error(y_test, ensemble_pred)
+        ens_r2 = r2_score(y_te, ens_pred)
+        ens_mae = mean_absolute_error(y_te, ens_pred)
         
         print(f"\nEnsemble Performance:")
-        print(f"   Test R²: {ensemble_r2:.3f}")
-        print(f"   Test MAE: {ensemble_mae:.3f}")
+        print(f"  Test R²: {ens_r2:.3f}")
+        print(f"  Test MAE: {ens_mae:.3f}")
         
-        # Compare ensemble to best single model
-        best_single_r2 = top_models.iloc[0]['Test R²']
-        improvement = ensemble_r2 - best_single_r2
+        # Compare to best single model
+        best_r2 = top.iloc[0]['Test R²']
+        diff = ens_r2 - best_r2
         
-        print(f"\n   vs Best Single Model:")
-        print(f"   Improvement: {improvement:+.3f} R²")
-        print(
-            f"   {'Ensemble wins!' if improvement > 0 else 'Single model better (use that)'}"
-        )
+        print(f"\nvs Best Single Model: {diff:+.3f} R²")
+        if diff > 0:
+            print("  → Ensemble wins!")
+        else:
+            print("  → Single model is better (just use that)")
         
-        # Persist ensemble outputs
-        self.ensemble_weights = weights
+        self.ensemble_weights = wts
         self.results['ensemble'] = {
-            'predictions': ensemble_pred,
-            'r2': ensemble_r2,
-            'mae': ensemble_mae,
-            'weights': weights
+            'predictions': ens_pred,
+            'r2': ens_r2,
+            'mae': ens_mae,
+            'weights': wts
         }
         
         return self
     
-    def analyze_feature_interactions(self, X, y, top_n_features=10):
-        """
-        Identify and rank pairwise feature interaction effects.
-
-        Generates multiplicative interaction features among the most
-        influential predictors and evaluates their importance using
-        a tree-based model.
-
-        Stores ranked interaction effects in self.results
-
-        Params:
-        X : pandas.DataFrame
-        Feature matrix.
-        y : pandas.Series or numpy.ndarray
-        Target values.
-        top_n_features : int, default=10
-        Number of base features used to construct interactions.
-
-        Returns: self
-        """        
+    def analyze_feature_interactions(self, X, y, n_feats=10):
+        """Test pairwise interactions among top features."""
         print("\n\nFeature Interaction Analysis")
-        print("\nAnalyzing pairwise feature interactions...")
+        print("Checking pairwise interactions...")
         
-        # Identify top features using model-based importance if available
+        # Identify top features from best model (or use correlation as fallback)
         if hasattr(self.best_model, 'feature_importances_'):
-            importance = self.best_model.feature_importances_
-            top_features = X.columns[np.argsort(importance)[-top_n_features:]]
+            imp = self.best_model.feature_importances_
+            top_f = X.columns[np.argsort(imp)[-n_feats:]]
         else:
-            # Fallback to absolute correlation with target
-            correlations = X.corrwith(y).abs()
-            top_features = correlations.nlargest(top_n_features).index
+            corrs = X.corrwith(y).abs()
+            top_f = corrs.nlargest(n_feats).index
         
-        print(f"\nTesting interactions among top {len(top_features)} features:")
-        for feat in top_features:
-            print(f"   • {feat}")
+        print(f"\nTesting interactions among top {len(top_f)} features:")
+        for f in top_f:
+            print(f"  • {f}")
         
-        # Explicitly construct pairwise interaction terms
-        X_with_interactions = X.copy()
-        interaction_names = []
+        # Build interaction features (multiplicative)
+        X_int = X.copy()
+        int_names = []
         
         from itertools import combinations
-        for feat1, feat2 in combinations(top_features, 2):
-            interaction_name = f"{feat1}×{feat2}"
-            X_with_interactions[interaction_name] = X[feat1] * X[feat2]
-            interaction_names.append(interaction_name)
+        for f1, f2 in combinations(top_f, 2):
+            nm = f"{f1}×{f2}"
+            X_int[nm] = X[f1] * X[f2]
+            int_names.append(nm)
         
-        # Train-test split with interaction features
-        from sklearn.model_selection import train_test_split
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_with_interactions, y, test_size=0.25, random_state=42
-        )
+        X_tr, X_te, y_tr, y_te = train_test_split(X_int, y, test_size=0.25, random_state=42)
         
-        # Use a constrained random forest to rank interaction importance
-        model = RandomForestRegressor(
-            n_estimators=100, max_depth=6, random_state=42, n_jobs=-1
-        )
-        model.fit(X_train, y_train)
+        # Train RF to rank interaction importance
+        mdl = RandomForestRegressor(n_estimators=100, max_depth=6, random_state=42, n_jobs=-1)
+        mdl.fit(X_tr, y_tr)
         
-        # Extract importance scores for interaction terms only
-        interaction_importance = {}
-        for name in interaction_names:
-            idx = list(X_train.columns).index(name)
-            interaction_importance[name] = model.feature_importances_[idx]
+        # Extract importance for interaction terms only
+        int_imp = {}
+        for nm in int_names:
+            idx = list(X_tr.columns).index(nm)
+            int_imp[nm] = mdl.feature_importances_[idx]
         
-        # Rank interactions by importance
-        sorted_interactions = sorted(
-            interaction_importance.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
+        sorted_int = sorted(int_imp.items(), key=lambda x: x[1], reverse=True)
         
-        print(f"\nTop 10 Feature Interactions:\n")
-        for i, (interaction, importance) in enumerate(sorted_interactions[:10], 1):
-            if 'x' not in interaction:
-                continue
-            print(f"{i:2d}. {interaction:50s} → Importance: {importance:.4f}")
-            print()
+        print("\nTop 10 Interactions by Importance:\n")
+        for i, (nm, imp) in enumerate(sorted_int[:10], 1):
+
+            print(f"{i:2d}. {nm:40s}  {imp:.4f}")
         
-        # Compare predictive performance with and without interactions
-        y_pred_with = model.predict(X_test)
-        r2_with = r2_score(y_test, y_pred_with)
+        # Check if interactions help
+        y_pred = mdl.predict(X_te)
+        r2_w_int = r2_score(y_te, y_pred)
         
-        print(f"\nImpact on Interactions:")
-        print(f"   Original R²: {self.results['model_comparison'].iloc[0]['Test R²']:.3f}")
-        print(f"   With Interactions: {r2_with:.3f}")
+        orig_r2 = self.results['model_comparison'].iloc[0]['Test R²']
+        print(f"\nImpact:")
+        print(f"  Original R²: {orig_r2:.3f}")
+        print(f"  With Interactions: {r2_w_int:.3f}")
         
         self.results['interactions'] = {
-            'top_interactions': sorted_interactions[:10],
-            'r2_improvement': (
-                r2_with - self.results['model_comparison'].iloc[0]['Test R²']
-            )
+            'top_interactions': sorted_int[:10],
+            'r2_improvement': r2_w_int - orig_r2
         }
         
         return self
+    
     def shap_analysis(self, X, sample_size=100):
-        """
-        Compute SHAP values for the current best model.
-        Stores SHAP values, feature-level importance, and the SHAP explainer
-        in self.results['shap'].
-
-        Params:
-        X : pandas.DataFrame
-            Feature matrix used to compute SHAP values.
-        sample_size : int, default=100
-            Number of rows sampled from X to limit computation cost.
-
-        Returns: self
-        """
-        # Sample a subset of rows to reduce SHAP computation cost
-        X_sample = X.sample(min(sample_size, len(X)), random_state=42)
-
-        # Tree-based explainer for the fitted model
-        explainer = shap.TreeExplainer(self.best_model)
-
-        # SHAP values for each feature and sample
-        shap_values = explainer.shap_values(X_sample)
-
-        # Aggregate absolute SHAP values for global feature importance
-        mean_abs_shap = np.abs(shap_values).mean(axis=0)
-
-        # Create feature importance DataFrame
-        shap_importance = pd.DataFrame({
-            'feature': X.columns,
-            'shap_importance': mean_abs_shap
-        }).sort_values('shap_importance', ascending=False)
-        print("\nTop 10 Features by SHAP Importance:")
-        print(shap_importance.head(10).to_string(index=False))
-        self.results['shap'] = {
-            'values': shap_values,
-            'mean_abs': mean_abs_shap,
-            'feature_names': X.columns.tolist(),
-            'importance_df': shap_importance,
-            'sample_size': len(X_sample)
-        }
-
+        """Compute SHAP values for the best model (tree-based only)."""
+        print("\n\nSHAP Analysis")
         
-        print(f"SHAP analysis complete for {len(X_sample)} samples")
+        X_samp = X.sample(min(sample_size, len(X)), random_state=42)
+        
+        explainer = shap.TreeExplainer(self.best_model)
+        shap_vals = explainer.shap_values(X_samp)
+        
+        # Average absolute SHAP = feature importance
+        mean_abs = np.abs(shap_vals).mean(axis=0)
+        
+        imp_df = pd.DataFrame({
+            'feature': X.columns,
+            'shap_importance': mean_abs
+        }).sort_values('shap_importance', ascending=False)
+        
+        print("\nTop 10 Features by SHAP Importance:")
+        print(imp_df.head(10).to_string(index=False))
+        
+        self.results['shap'] = {
+            'values': shap_vals,
+            'mean_abs': mean_abs,
+            'feature_names': X.columns.tolist(),
+            'importance_df': imp_df,
+            'sample_size': len(X_samp)
+        }
+        
+        print(f"\nSHAP computed on {len(X_samp)} samples")
         return self
-
+    
     def quantify_uncertainty(self, X, y, n_iterations=100):
-        """
-        Estimate prediction uncertainty using bootstrap resampling.
-        Stores bootstrap predictions, confidence intervals, and
-        distributional metrics in self.results['uncertainty'].
-
-        Params
-        X : pandas.DataFrame
-            Feature matrix.
-        y : pandas.Series or numpy.ndarray
-            Target values.
-        n_iterations : int, default=100
-            Number of bootstrap resamples.
-
-        Returns: self
-        """
+        """Bootstrap resampling to estimate prediction intervals and R² confidence."""
         print("\n\nUncertainty Quantification")
         print(f"Running {n_iterations} bootstrap iterations...")
         
-        # Test split reused from compare_models
-        X_test = self.results['X_test']
-        y_test = self.results['y_test']
-
-        # Collect per-iteration predictions and R² values
-        bootstrap_predictions = []
-        bootstrap_r2s = []
-
-        # Resample training data and retrain the model each iteration
+        X_te = self.results['X_test']
+        y_te = self.results['y_test']
+        
+        boot_preds = []
+        boot_r2s = []
+        
         for i in range(n_iterations):
             if (i + 1) % 20 == 0:
-                print(f"   Iteration {i + 1}/{n_iterations}")
-                
-            X_boot, y_boot = resample(
-                self.results['X_train'],
-                self.results['y_train'],
-                random_state=i
-            )
-
-            # Clone model using the same hyperparameters
-            model = type(self.best_model)(**self.best_model.get_params())
-            model.fit(X_boot, y_boot)
-
-            # Predict on the fixed test set
-            y_pred = model.predict(X_test)
-            bootstrap_predictions.append(y_pred)
-            bootstrap_r2s.append(r2_score(y_test, y_pred))
-
-        # Compute empirical prediction intervals
-        bootstrap_predictions = np.array(bootstrap_predictions)
-        pred_mean = bootstrap_predictions.mean(axis=0)
-        pred_lower = np.percentile(bootstrap_predictions, 2.5, axis=0)
-        pred_upper = np.percentile(bootstrap_predictions, 97.5, axis=0)
-
-        # Fraction of true values falling inside the interval
-        coverage = np.mean((y_test >= pred_lower) & (y_test <= pred_upper))
+                print(f"  Iteration {i + 1}/{n_iterations}")
+            
+            X_b, y_b = resample(self.results['X_train'], self.results['y_train'], random_state=i)
+            
+            # Clone model with same params
+            mdl = type(self.best_model)(**self.best_model.get_params())
+            mdl.fit(X_b, y_b)
+            
+            y_pred = mdl.predict(X_te)
+            boot_preds.append(y_pred)
+            boot_r2s.append(r2_score(y_te, y_pred))
         
-        # R² confidence interval
-        r2_lower = np.percentile(bootstrap_r2s, 2.5)
-        r2_upper = np.percentile(bootstrap_r2s, 97.5)
-        r2_mean = np.mean(bootstrap_r2s)
+        boot_preds = np.array(boot_preds)
+        pred_mean = boot_preds.mean(axis=0)
+        pred_lo = np.percentile(boot_preds, 2.5, axis=0)
+        pred_hi = np.percentile(boot_preds, 97.5, axis=0)
+        
+        # What fraction of true values fall inside 95% PI?
+        coverage = np.mean((y_te >= pred_lo) & (y_te <= pred_hi))
+        
+        r2_mean = np.mean(boot_r2s)
+        r2_lo = np.percentile(boot_r2s, 2.5)
+        r2_hi = np.percentile(boot_r2s, 97.5)
         
         print(f"\nResults:")
-        print(f"   R² Mean: {r2_mean:.3f}")
-        print(f"   R² 95% CI: [{r2_lower:.3f}, {r2_upper:.3f}]")
-        print(f"   Prediction Coverage: {coverage:.1%}")
+        print(f"  R² Mean: {r2_mean:.3f}")
+        print(f"  R² 95% CI: [{r2_lo:.3f}, {r2_hi:.3f}]")
+        print(f"  Prediction Coverage: {coverage:.1%}")
         
-        # Store results
         self.results['uncertainty'] = {
-            'bootstrap_predictions': bootstrap_predictions,
+            'bootstrap_predictions': boot_preds,
             'pred_mean': pred_mean,
-            'pred_lower_95': pred_lower,
-            'pred_upper_95': pred_upper,
+            'pred_lower_95': pred_lo,
+            'pred_upper_95': pred_hi,
             'coverage': coverage,
-            'r2_distribution': bootstrap_r2s,
+            'r2_distribution': boot_r2s,
             'r2_mean': r2_mean,
-            'r2_ci_lower': r2_lower,
-            'r2_ci_upper': r2_upper,
+            'r2_ci_lower': r2_lo,
+            'r2_ci_upper': r2_hi,
             'n_iterations': n_iterations
         }
         
-        print(f"Uncertainty quantification complete")
         return self
 
+
 def run_advanced_analysis(X, y):
-    """
-    Execute the full modeling pipeline on the provided dataset.
-
-    Parameters: 
-    X : pandas.DataFrame
-        Feature matrix.
-    y : pandas.Series or numpy.ndarray
-        Target values.
-
-    Returns: AdvancedModelingPipeline, which is a fitted pipeline containing models and results.
-    """
-    pipeline = AdvancedModelingPipeline()
+    """Run full pipeline: model comparison, tuning, ensemble, interactions, SHAP, uncertainty."""
+    pipe = AdvancedModelingPipeline()
     
-    # Build and compare multiple models
-    pipeline.build_model_suite()
-    pipeline.compare_models(X, y)
+    pipe.build_model_suite()
+    pipe.compare_models(X, y)
     
-    # Hyperparameter tuning for best model
-    best_model_name = pipeline.results['model_comparison'].iloc[0]['Model']
-    if best_model_name in ['xgboost', 'lightgbm']:
-        pipeline.hyperparameter_tuning(X, y, model_name=best_model_name)
-        pipeline.compare_models(X, y)  # Re-compare with tuned model
+    # Tune best model if it's XGB or LGB
+    best_nm = pipe.results['model_comparison'].iloc[0]['Model']
+    if best_nm in ['xgboost', 'lightgbm']:
+        pipe.hyperparameter_tuning(X, y, model_name=best_nm)
+        pipe.compare_models(X, y)  # Re-run comparison with tuned model
     
-    # Build ensemble
-    pipeline.build_ensemble(X, y, top_n=3)
+    pipe.build_ensemble(X, y, n=3)
+    pipe.analyze_feature_interactions(X, y)
     
-    # Feature interactions
-    pipeline.analyze_feature_interactions(X, y)
-    
-    # SHAP analysis (if available)
     if SHAP_AVAILABLE:
-        pipeline.shap_analysis(X)
+        pipe.shap_analysis(X)
     
-    # Uncertainty quantification
-    pipeline.quantify_uncertainty(X, y, n_iterations=50)
+    pipe.quantify_uncertainty(X, y, n_iterations=50)
     
-    return pipeline
+    return pipe
 
 
 if __name__ == "__main__":
     print("""
-    Advanced Multi-Model Analysis Pipeline                
+Advanced Multi-Model Analysis Pipeline
 
-    This pipeline includes:
+Includes:
+- 6 model comparison (Ridge, RF, GBM, XGB, LGB, ElasticNet)
+- Hyperparameter tuning
+- Weighted ensemble
+- Feature interactions
+- SHAP interpretation
+- Bootstrap uncertainty quantification
 
-    - Multiple model comparison (6 algorithms)
-    - Hyperparameter optimization
-    - Ensemble learning
-    - Feature interaction analysis
-    - SHAP interpretability
-    - Uncertainty quantification
-
-    Usage:
+Usage:
     from advanced_modeling import run_advanced_analysis
-
     pipeline = run_advanced_analysis(X, y)
     results = pipeline.results
-    """)
+""")

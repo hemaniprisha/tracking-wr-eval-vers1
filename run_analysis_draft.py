@@ -31,7 +31,7 @@ try:
     # Case 1: project root on PYTHONPATH
     from src.tracking_analysis_draft import TrackingDataAnalyzer
     from src.advanced_modeling import AdvancedModelingPipeline, run_advanced_analysis
-    from src.tracking_visuals import TrackingVisualizer, create_all_visuals
+    from src.tracking_visuals import TrackVis, create_all_visuals
 
 except ImportError:
     # Case 2: running script directly, add src to path
@@ -40,7 +40,7 @@ except ImportError:
     try:
         from tracking_analysis_draft import TrackingDataAnalyzer
         from advanced_modeling import AdvancedModelingPipeline, run_advanced_analysis
-        from tracking_visuals import TrackingVisualizer, create_all_visuals
+        from tracking_visuals import TrackVis, create_all_visuals
     except ImportError as e:
         print("\nERROR: Cannot find required modules!")
         print(e)
@@ -52,9 +52,7 @@ def print_banner():
     print("""
                 WR Tracking Data to Draft Performance Analysis                                               
     """)
-    print(f"\n{'='*80}")
     print(f"Analysis Started: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}")
-    print(f"{'='*80}\n")
 
 
 def create_directory_structure(base_output_dir):
@@ -305,7 +303,7 @@ Examples:
     try:
         analyzer = TrackingDataAnalyzer(args.data)
     except Exception as e:
-        print(f"\nERrror loading data: {str(e)}")
+        print(f"\nErrror loading data: {str(e)}")
         sys.exit(1)
     
     # Step 2: Explore data
@@ -339,7 +337,7 @@ Examples:
     # Run advanced analysis
     advanced_pipeline = AdvancedModelingPipeline()
     advanced_pipeline.build_model_suite()
-    advanced_pipeline.compare_models(X, y, cv_folds=5)
+    advanced_pipeline.compare_models(X, y, cv=5)
     
     # Hyperparameter tuning for best model
     best_model_name = advanced_pipeline.results['model_comparison'].iloc[0]['Model']
@@ -350,17 +348,17 @@ Examples:
         advanced_pipeline.compare_models(X, y)
     
     # Ensemble
-    advanced_pipeline.build_ensemble(X, y, top_n=3)
+    advanced_pipeline.build_ensemble(X, y, n=3)
     
     # Feature interactions
-    advanced_pipeline.analyze_feature_interactions(X, y, top_n_features=8)
+    advanced_pipeline.analyze_feature_interactions(X, y, n_feats=8)
     
     # SHAP (unless quick mode)
     if not args.quick:
         try:
             advanced_pipeline.shap_analysis(X, sample_size=100)
         except Exception as e:
-            print(f"⚠️  SHAP analysis skipped: {str(e)}")
+            print(f" SHAP analysis skipped: {str(e)}")
     
     # Uncertainty quantification (unless quick mode)
     if not args.quick:
@@ -452,7 +450,7 @@ Examples:
     # Save to root for Streamlit
     with open('tracking_draft_export.pkl', 'wb') as f:
         pickle.dump(export, f)
-    print("✓ Dashboard export: tracking_draft_export.pkl")
+    print(" Dashboard export: tracking_draft_export.pkl")
     # Final summary
     print("Analysis Complete")
     

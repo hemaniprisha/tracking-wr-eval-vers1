@@ -37,9 +37,8 @@ except ImportError:
 
 def print_banner():
     print("""
-╔══════════════════════════════════════════════════════════════════════════╗
-║            WR TRACKING DATA ANALYSIS PIPELINE                             ║
-╚══════════════════════════════════════════════════════════════════════════╝
+            WR TRACKING DATA ANALYSIS PIPELINE                             
+
 """)
     print(f"Started: {datetime.now().strftime('%B %d, %Y %I:%M %p')}\n")
 
@@ -105,6 +104,8 @@ def main():
         end_year=args.rookie_end_year
     )
     analyzer.merge_tracking_with_rookie_performance()
+    print(f"DEBUG: self.df has {len(analyzer.df)} rows")  # Should print 82
+    print(f"DEBUG: targets_per_game non-null: {analyzer.df['targets_per_game'].notna().sum()}")  # Should be 82
     analyzer.identify_archetypes(n_clusters=5)
 
 

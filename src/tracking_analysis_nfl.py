@@ -166,6 +166,7 @@ class TrackingDataAnalyzer:
 
         # Require minimum games played to filter out practice squad players
         rookie_wr = rookie_wr[rookie_wr['games'] >= min_games].copy()
+        rookie_wr = rookie_wr.drop_duplicates(subset=['player_name'], keep='first')
 
         # Calculate per-game performance metrics
         rookie_wr['yards_per_game'] = rookie_wr['receiving_yards'] / rookie_wr['games']
@@ -582,8 +583,7 @@ class TrackingDataAnalyzer:
         
         # Impute target
         y = df_model[target].copy()
-        y_imputed = imputer.fit_transform(y.values.reshape(-1, 1)).ravel()
-        y = pd.Series(y_imputed, index=y.index)
+        y = pd.Series(y, index=y.index)
         
         # Remove any rows that still have missing values
         valid_idx = ~(X_imputed.isnull().any(axis=1) | y.isnull())
