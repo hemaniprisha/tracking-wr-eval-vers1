@@ -2,8 +2,6 @@
 
 **Predicting NFL Wide Receiver Success with In-Game Tracking Data**
 
-*Because 40-times don't tell the whole story.*
-
 ---
 
 ## The Problem
